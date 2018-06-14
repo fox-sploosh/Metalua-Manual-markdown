@@ -958,7 +958,7 @@ function cfg.expr.down (x)
    end
 end
 ```
-Here's a remark for functional programmers: this API is very imperative; you might cringe at seeing the `Call nodes transformed in-place. Well, I tend to agree but it's generally counter-productive to work against the grain of the wood: Lua is imperative at heart, and design attempts at doing this functionally sucked more than approaches that embraced imperativeness.
+Here's a remark for functional programmers: this API is very imperative; you might cringe at seeing the `` `Call`` nodes transformed in-place. Well, I tend to agree but it's generally counter-productive to work against the grain of the wood: Lua is imperative at heart, and design attempts at doing this functionally sucked more than approaches that embraced imperativeness.
 ### Cuts
 By making down() return 'break', you can prevent the traversal to go further down. This might be either because you're not interested by the subtrees, or because you want to traverse them in a special way. In that later case, just do the traversal by yourself in the down() function, and cut the walking by returning 'break', so that nodes aren't re-traversed by the default walking algorithm. We'll see that in the next, more complex example, listing of free variables. This example is exclusively there for demonstration purposes. For actual work on identifiers that require awareness of an identifier's binder of freedom, there is a dedicated walk.id library. We'll progressively build a walker that gathers all global variables used in a given AST. This involves keeping, at all times, a set of the identifiers currently bound by a "local" declaration, by function parameters, as for loop variables etc. Then, every time an identifier is found in the AST, its presence is checked in the current set of bound variables. If it isn't in it, then it's a free (global) identifier. The first thing we'll need is a scope handling system: something that keeps track of what identifiers are currently in scope. It must also allow to save the current scope (e.g. before we enter a new block) and restore it afterwards (e.g. after we leave the block). This is quite straightforward and unrelated to code walking; here is the code:
 ```Lua
@@ -1092,7 +1092,7 @@ local function fv (term)
 end
 ```
 This is almost correct now. There's one last tricky point of Lua's semantics that we need to address: in repeat foo until bar loops, "bar" is included in "foo"'s scope. For instance, if we write `repeat local x=foo() until x>3`, the "x" in the condition is the local variable "x" declared inside the body. This violates our way of handling block scopes: the scope must be kept alive after the block is finished. We'll fix this by providing a custom walking for the block inside `` `Repeat``, and preventing the normal walking to happen by returning 'break':
-```
+```Lua
 -----------------------------------------------------------
 -- Create a new scope and register loop variable[s] in it
 -----------------------------------------------------------
@@ -1190,7 +1190,7 @@ This library allows to easily store data, in an AST walking function, in a scope
 ## `dollar`: generic syntax for macros
 When you write a short-lived macro which takes reasonably short arguments, you generally don't want to write a supporting syntax for it. The dollar library allows you to call it in a generic way: if you store your macro in the table mlp.macros, say as function mlp.macros.foobar, then you can call it in your code as $foobar(arg1, arg2...): it will receive as parameters the ASTs of the pseudo-call's arguments.
 ### Example
-```
+```Lua
 -{ block:
    require 'dollar'
    function doller.LOG(id)
@@ -1259,7 +1259,7 @@ We'll exploit this mechanism, by enclosing the guarded code in a function, calli
 ## Exception objects
 We want to be able to classify exceptions hierarchically: each exception will inherit from a more generic exception, the most generic one being simply called `exception`. We'll therefore design a system which allows to specialize an exception into a sub-exception, and to compare two exceptions, to know whether one is a special case of another. Comparison will be handled by the usual `< > <= >=` operators, which we'll overload through metatables. Here is an implementation of the base exception exception, with working comparisons, and a `new()` method which allow to specialize an exception. Three exceptions are derived as an example, so that `exception > exn_invalid > exn_nullarg and exception > exn_nomorecoffee`:
 
-```
+```Lua
 exception = { } ; exn_mt = { } 
 setmetatable (exception, exn_mt)
 
@@ -1326,7 +1326,7 @@ print("done")
 ```
 In this, the only nontrivial part is the sequence of if/then/elseif tests at the end. If you check the doc about AST representation of such blocks, you'll come up with some generation code which looks like:
 
-```
+```Lua
 function trywith_builder(x)
    ---------------------------------------------------------
    -- Get the parts of the sequence:
@@ -1366,7 +1366,7 @@ This is the first non-trivial example we see, and it might require a bit of atte
 - the definitions of throw, the root exception and the various derived exceptions are regular code, and must be included normally.
 The whole result in a single file would therefore look like:
 
-```
+```Lua
 -{ block:
    local trywith_builder = ...
    local trywith_parser  = ...
@@ -1394,7 +1394,7 @@ the parser modifier, i.e. the content of `-{block:...}` above, goes into a file 
 the library part, i.e. `throw ... exn_nomorecoffee ...` goes into a file `ext-lib/exn.lua` of Lua's path;
 the sample calls them both with metalua standard lib's extension function:
 
-```
+```Lua
 -{ extension "exn" }
 try
   ...
@@ -1415,7 +1415,7 @@ Refining the example to address these shortcomings is left as an exercise to the
 Addressing the variable capture issue is straightforward: use `gg.gensym()` to generate unique identifiers (which cannot capture anything), and put anti-quotes at the appropriate places. Eventually, metalua will include a hygienization library which will automate this dull process. 
 
 Passing parameters to exceptions can be done by adding arbitrary parameters to the `new()` method: these parameters will be stored in the exception, e.g. in its array part. finally, the syntax has to be extended so that the caught exception can be given a name. Code such as the one which follows should be accepted:
-```
+```Lua
 try
    ...
    throw (exn_invalid:new "I'm sorry Dave, I'm afraid I can't do that.")
